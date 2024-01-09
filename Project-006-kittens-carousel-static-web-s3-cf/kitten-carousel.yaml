@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |   
+   Cloudformation Template for kittens carousel static website deploy on s3 through
+   cloudfront and route 53
+Parameters:
+  HostedZone:
+    Description: DNS Name of existing Amazon Route 53 hosted zone. exp. abdudevops.com
+    Type: AWS::Route53::HostedZone::Id
+  DNS:
+    Description: Select a dns name
+    Type: String
+    AllowedPattern: (?!-)[a-zA-Z0-9-.]{1,63}(?<!-) 
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref DNS
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  S3Bucketpolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket # Required
+      PolicyDocument: # Required
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal: '*'
+            Sid: PublicReadGetObject
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'S3Bucket', /*]]
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref DNS
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+          TargetOriginId: KittensOrigin
+          ViewerProtocolPolicy: allow-all 
+        DefaultRootObject: "index.html"
+        Enabled: true
+        HttpVersion: "http2"
+        Origins:
+          - DomainName: !Select [2, !Split ["/", !GetAtt S3Bucket.WebsiteURL]]
+            Id: KittensOrigin
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+        PriceClass: PriceClass_All
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:071573392472:certificate/7322c871-e81a-4c0f-9e28-29fa63f3b67e
+          SslSupportMethod: sni-only
+  RecordGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      RecordSets: 
+        - Name: !Ref DNS
+          Type: A
+          AliasTarget:
+               DNSName: !GetAtt CloudFront.DomainName
+               HostedZoneId: "Z2FDTNDATAQYW2"
+Outputs:
+  BucketName:
+    Description:  s3 bucket url
+    Value: !Ref S3Bucket.WebsiteURL
+  Cloudfront:
+    Description: Cloudfront endpoint
+    Value: !GetAtt CloudFront.DomainName
+  Domainname:
+    Description: Full domain name
+    Value: !Ref DNS

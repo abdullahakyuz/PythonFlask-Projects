@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  This template set a ec2 with flask which is created cloudformation service.
+  
+Parameters:
+  
+  VPC:
+    Description: This is a default vpc
+    Type: AWS::EC2::VPC::Id
+
+  KeyName:
+    Description: Choose a key name.
+    Type: AWS::EC2::KeyPair::KeyName
+    
+  InstanceType:
+    Description: Choose a instance type. 
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t2.nano 
+    
+  EnvPara:
+    Description:  This is linux 2023 aws ami.
+    Type: String
+    Default: linux
+
+Mappings:
+  RegionImageMap:
+    us-east-1:
+      linux: ami-0715c1897453cabd1
+    us-east-2:
+      linux: ami-01107263728f3bef4
+    us-west-1:
+      linux: ami-0062dbf6b829f04e1
+    us-west-2:
+      linux: ami-0ab193018f3e9351b
+    eu-west-1:
+      linux: ami-04f7efe62f419d9f5
+  
+Resources:
+  
+  MyInstances:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap 
+        - RegionImageMap
+        - !Ref "AWS::Region"
+        - !Ref EnvPara
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - !GetAtt MySecGroup.GroupId    #!Ref MySecGroup
+      UserData: !Base64 |
+        #! /bin/bash
+        yum update -y
+        yum install -y python3 python3-pip
+        pip3 install flask
+        FOLDER="https://raw.githubusercontent.com/abdullahakyuz/MyProject/main/Project-001-Roman-Numerals-Converter"
+        mkdir roman-number-conversion-project && cd roman-number-conversion-project
+        wget $FOLDER/app.py
+        mkdir templates && cd templates
+        wget $FOLDER/templates/index.html
+        wget $FOLDER/templates/result.html
+        cd ..
+        chmod +x app.py
+        python3 app.py
+  MySecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSh and HTTP # Required
+      GroupName: flasksecgroup
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPC
+  
+Outputs:
+  FlaskDNS:
+    Description: This DNS give us dns name
+    Value: !Join
+    - ''
+    - - 'http://'
+      - !GetAtt MyInstances.PublicDnsName

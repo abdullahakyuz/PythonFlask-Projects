@@ -17,17 +17,17 @@ def main_post():
     if request.method == 'POST':
         alpha = request.form['number']
         if not alpha.isdecimal():
-            return render_template('index.html', developer_name='Oktay', not_valid=True)
+            return render_template('index.html', developer_name='Abdu', not_valid=True)
         number = int(alpha)
         if not 0 < number < 4000:
-            return render_template('index.html', developer_name='Oktay', not_valid=True)
-        return render_template('result.html', number_decimal = number , number_roman= convert(number), developer_name='Oktay')
+            return render_template('index.html', developer_name='Abdu', not_valid=True)
+        return render_template('result.html', number_decimal = number , number_roman= convert(number), developer_name='Abdu')
     else:
-        return render_template('index.html', developer_name='Oktay', not_valid=False)
+        return render_template('index.html', developer_name='Abdu', not_valid=False)
 
 if __name__ == '__main__':
     # app.run(debug=True)
-    app.run(host='0.0.0.0', port=80)
+     app.run(host='0.0.0.0', port=80)
 
 
 # isdecimal():the function is used to check if all the letters in the string are numbers or not 

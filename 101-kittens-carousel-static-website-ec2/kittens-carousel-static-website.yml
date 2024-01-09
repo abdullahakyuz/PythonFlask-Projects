@@ -3,7 +3,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >
   CloudFormation Template for Kittens Carousel Static Website on EC2.
   This template deploys Kittens Carousel Static Website on Amazon Linux 2
-  (ami-026dea5602e368e96) EC2 Instance with custom security group 
+  (ami-0715c1897453cabd1) EC2 Instance with custom security group 
   allowing http connections on port 80. Kittens Carousel Static Website 
   is downloaded from Github repository, then deployed on Apache Web Server.
 
@@ -24,9 +24,9 @@ Resources:
   WebServerHost:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-09d95fab7fff3776c
+      ImageId: ami-0715c1897453cabd1
       InstanceType: t2.micro
-      KeyName: call.training
+      KeyName: key_name
       SecurityGroupIds:
         - !Ref WebServerSecurityGroup
       Tags:                
@@ -40,8 +40,9 @@ Resources:
             yum update -y
             yum install httpd -y
             TOKEN="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-            FOLDER="https://$TOKEN@raw.githubusercontent.com/clarusway/cw-workshop/dev/aws/projects/101-kittens-carousel-static-website-ec2/static-web/"
+            FOLDER="https://$TOKEN@raw.githubusercontent.com/abdullahakyuz/MyProject/main/101-kittens-carousel-static-website-ec2/static-web/"
             curl -s --create-dirs -o "/var/www/html/index.html" -L "$FOLDER"index.html
+            curl -s --create-dirs -o "/var/www/html/fb.jpg" -L "$FOLDER"fb.jpg
             curl -s --create-dirs -o "/var/www/html/cat0.jpg" -L "$FOLDER"cat0.jpg
             curl -s --create-dirs -o "/var/www/html/cat1.jpg" -L "$FOLDER"cat1.jpg
             curl -s --create-dirs -o "/var/www/html/cat2.jpg" -L "$FOLDER"cat2.jpg

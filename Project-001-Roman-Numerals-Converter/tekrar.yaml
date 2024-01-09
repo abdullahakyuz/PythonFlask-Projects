@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  This template was created for convert num project.
+  
+Parameters:
+  
+  Env:
+    Description: Choose a ami
+    Type: String
+    Default: linux
+  
+  VPC:
+    Description: Choose a vpc
+    Type: AWS::EC2::VPC::Id
+  
+  InstanceType:
+    Description: Choose a instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+        - t2.micro
+        - t3.micro
+        - t2.nano 
+      
+  
+  KeyName:
+    Description: Choose a key pair
+    Type: AWS::EC2::KeyPair::KeyName
+  
+Mappings:
+   
+  RegionImageMap:
+    us-east-1:
+      linux: ami-0715c1897453cabd1
+    us-east-2:
+      linux: ami-01107263728f3bef4
+    us-west-1:
+      linux: ami-0062dbf6b829f04e1
+    us-west-2:
+      linux: ami-0ab193018f3e9351b
+    eu-west-1:
+      linux: ami-04f7efe62f419d9f5
+  
+Resources:
+
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap 
+        - RegionImageMap
+        - !Ref "AWS::Region"
+        - !Ref Env
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName 
+      SecurityGroupIds: 
+        - !Ref MySecGroup  # !GetAtt MySecGroup.GroupId
+      UserData: !Base64 |
+        #! /bin/bash
+        yum update -y
+        yum install -y python3 python3-pip
+        pip3 install flask
+        FOLDER="https://raw.githubusercontent.com/abdullahakyuz/MyProject/main/Project-001-Roman-Numerals-Converter"
+        mkdir roman-number-conversion-project && cd roman-number-conversion-project
+        wget $FOLDER/app.py
+        mkdir templates && cd templates
+        wget $FOLDER/templates/index.html
+        wget $FOLDER/templates/result.html
+        cd ..
+        chmod +x app.py
+        python3 app.py
+
+
+  MySecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH and HTTP # Required
+      GroupName: flaskapp
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22 
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80 
+          ToPort: 80
+          CidrIp: 0.0.0.0/0  
+      VpcId: !Ref VPC
+
+  
+Outputs:
+  DNSName:
+    Description: This is dns name
+    Value: !Join
+    - ''  
+    - - 'https://'
+      - !GetAtt MyInstance.PublicDnsName

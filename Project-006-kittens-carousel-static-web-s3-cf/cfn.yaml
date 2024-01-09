@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  This template for static website.We use cloudfront with ssl certificate.
+Parameters:
+  HostZone:
+    Description: This is host-zone-id
+    Type: AWS::Route53::HostedZone::Id
+  
+  SubDomain:
+    Description: Type a subdomain name. 
+    Type: String
+
+
+Resources:
+  
+  Route53Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        EvaluateTargetHealth: false
+        HostedZoneId: "Z2FDTNDATAQYW2"
+      HostedZoneId: !Ref HostZone
+      Name: !Ref SubDomain # Required
+      Type: "A" # Required
+
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref SubDomain
+        DefaultRootObject: "index.html"
+        DefaultCacheBehavior:
+             AllowedMethods:
+                  - GET
+                  - HEAD 
+             Compress: true
+             ForwardedValues:
+                  QueryString: true
+                  Cookies:
+                       Forward: none
+             ViewerProtocolPolicy: allow-all
+             TargetOriginId: kittensorigin
+        Enabled: true
+        HttpVersion: "http2"
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            CustomOriginConfig: 
+              OriginProtocolPolicy: http-only
+              OriginSSLProtocols: 
+                - TLSv1.2
+            Id: kittensorigin
+        PriceClass: PriceClass_All
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:071573392472:certificate/7322c871-e81a-4c0f-9e28-29fa63f3b67e
+          SslSupportMethod: sni-only   
+  
+  S3BUCKETPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket # Required
+      PolicyDocument:
+         Version: '2012-10-17'
+         Statement:
+          - Sid: "PublicReadGetObject"
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource:
+              Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref 'S3Bucket'
+                  - '/*'
+
+  
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref SubDomain
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+      WebsiteConfiguration:
+        IndexDocument: "index.html"
+  
+Outputs:
+    S3Bucket:
+      Description: This is staticweb s3 bucket url
+      Value: !GetAtt S3Bucket.WebsiteURL
+    CloudfrontUrl:
+      Description: This is cloudfront domain name 
+      Value: !GetAtt CloudFrontDistribution.DomainName
+    DomainName:
+      Description: This is our domain name
+      Value: !Ref SubDomain
